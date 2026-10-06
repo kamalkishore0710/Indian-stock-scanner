@@ -15,6 +15,7 @@ def load_index_tickers(index_name):
     
     urls = {
         "Nifty 50 (Mega Caps)": f"{base_url}NIFTY50.csv",
+         "Nifty 500 (Mega Caps)": f"{base_url}NIFTY500.csv",
         "Nifty Midcap 150": f"{base_url}NIFTY_MIDCAP_150.csv",
         "Nifty Smallcap 250": f"{base_url}NIFTY_SMALLCAP_250.csv",
         "Nifty Microcap 250 (Micro Caps)": f"{base_url}NIFTY_MICROCAP_250.csv"
