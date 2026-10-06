@@ -6,9 +6,9 @@ import io
 
 st.set_page_config(page_title="Indian Stock Ultimate Market Scanner", layout="wide")
 st.title("🇮🇳 Indian Stock Market Complete Universe Scanner")
-st.write("Scan entire index configurations (including the unified Nifty 500) to find companies matching your 5-year profit framework.")
+st.write("Scan entire index configurations to find companies matching your 5-year profit framework.")
 
-# Helper function to dynamically map, download, and clean index components
+# Helper function to dynamically map and download index components
 @st.cache_data
 def load_index_tickers(index_name):
     base_url = "https://githubusercontent.com"
@@ -34,12 +34,12 @@ def load_index_tickers(index_name):
     except Exception:
         pass
         
-    # Faultless resilient mock maps if connection times out
+    # Faultless fallback configurations
     fallbacks = {
         "Nifty 50 (Mega Caps)": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS"],
-        "Nifty 500 (Comprehensive Market)": ["RELIANCE.NS", "TCS.NS", "MIDHANI.NS", "ZOMATO.NS", "SUZLON.NS"],
-        "Nifty Midcap 150": ["TATAMOTORS.NS", "FEDERALBNK.NS", "VOLTAS.NS"],
-        "Nifty Smallcap 250": ["SUZLON.NS", "RBLBANK.NS", "CDSL.NS"],
+        "Nifty 500 (Comprehensive Market)": ["RELIANCE.NS", "TCS.NS", "SUZLON.NS"],
+        "Nifty Midcap 150": ["TATAMOTORS.NS", "FEDERALBNK.NS"],
+        "Nifty Smallcap 250": ["SUZLON.NS", "CDSL.NS"],
         "Nifty Microcap 250 (Micro Caps)": ["INFIBEAM.NS", "DEN.NS"]
     }
     return fallbacks.get(index_name, ["RELIANCE.NS"])
@@ -59,11 +59,12 @@ selected_index = st.selectbox(
 tickers_to_scan = load_index_tickers(selected_index)
 st.info(f"📋 Loaded {len(tickers_to_scan)} companies matching your selection.")
 
-# Slider to prevent server overloads during quick evaluation sweeps
+# Slider to manage execution workloads safely
 max_scan = st.slider("⚙️ Limit scan batch size (Recommended for quick testing):", 5, len(tickers_to_scan), min(50, len(tickers_to_scan)))
 
 if st.button("🚀 Run Live Engine Sweep", type="primary"):
     results = []
+    errors_logged = 0
     progress_bar = st.progress(0)
     status_text = st.empty()
     
@@ -77,20 +78,37 @@ if st.button("🚀 Run Live Engine Sweep", type="primary"):
             ticker = yf.Ticker(ticker_symbol)
             info = ticker.info
             
-            market_cap_inr = info.get("marketCap", 0)
+            # Extract market cap safely
+            market_cap_inr = info.get("marketCap", 0) or 0
             if market_cap_inr <= 0:
                 continue
             market_cap_crores = market_cap_inr / 10_000_000
             
+            # Fetch structural Income statement fields across modern formats safely
             financials = ticker.financials
-            if "Net Income" not in financials.index:
+            net_income_row = None
+            
+            if financials is not None and not financials.empty:
+                # Loop through standard capitalization variants used by API formats
+                for target_label in ["Net Income", "NetIncome", "netIncome"]:
+                    if target_label in financials.index:
+                        net_income_row = financials.loc[target_label]
+                        break
+            
+            if net_income_row is None or len(net_income_row) == 0:
+                errors_logged += 1
                 continue
                 
-            recent_net_income = financials.loc["Net Income"].iloc
-            recent_profit_crores = recent_net_income / 10_000_000
+            # Safely grab the first available data column position
+            recent_net_income = net_income_row.iloc[0]
+            if pd.isna(recent_net_income) or recent_net_income is None:
+                continue
+                
+            recent_profit_crores = float(recent_net_income) / 10_000_000
             
+            # Calculate custom growth assumptions or target 10% base
             growth_rate = info.get("earningsGrowth", 0.10)
-            if growth_rate is None or growth_rate <= 0:
+            if growth_rate is None or not isinstance(growth_rate, (int, float)) or growth_rate <= 0:
                 growth_rate = 0.10
                 
             projected_profits = []
@@ -111,9 +129,10 @@ if st.button("🚀 Run Live Engine Sweep", type="primary"):
                 "Thesis Match": "✅ PASS" if passed else "❌ FAIL"
             })
         except Exception:
+            errors_logged += 1
             continue
             
-    status_text.text("Sweep completed successfully!")
+    status_text.text("Sweep completed!")
     
     if results:
         df = pd.DataFrame(results)
@@ -131,4 +150,5 @@ if st.button("🚀 Run Live Engine Sweep", type="primary"):
         st.write("Full Processing Log Table View:")
         st.dataframe(df, use_container_width=True)
     else:
-        st.error("Engine failed to compute valid structural outputs.")
+        st.error(f"Engine failed to process any tickers cleanly. (Skipped {errors_logged} stocks due to unavailable data structures on Yahoo Finance)")
+        st.info("💡 Pro-Tip: Try scanning 'Nifty 50 (Mega Caps)' first to verify if your server connection is clear!")
