@@ -5,17 +5,17 @@ import urllib.request
 import io
 
 st.set_page_config(page_title="Indian Stock Ultimate Market Scanner", layout="wide")
-st.title("🇮🇳 Indian Stock Market Complete Segment Scanner")
-st.write("Scan Large, Mid, Small, or Micro-cap indices to identify stocks meeting your 5-year profit thesis framework.")
+st.title("🇮🇳 Indian Stock Market Complete Universe Scanner")
+st.write("Scan entire index configurations (including the unified Nifty 500) to find companies matching your 5-year profit framework.")
 
-# Helper function to dynamically map and clean ticker endpoints
+# Helper function to dynamically map, download, and clean index components
 @st.cache_data
 def load_index_tickers(index_name):
     base_url = "https://githubusercontent.com"
     
     urls = {
         "Nifty 50 (Mega Caps)": f"{base_url}NIFTY50.csv",
-         "Nifty 500 (Mega Caps)": f"{base_url}NIFTY500.csv",
+        "Nifty 500 (Comprehensive Market)": f"{base_url}NIFTY500.csv",
         "Nifty Midcap 150": f"{base_url}NIFTY_MIDCAP_150.csv",
         "Nifty Smallcap 250": f"{base_url}NIFTY_SMALLCAP_250.csv",
         "Nifty Microcap 250 (Micro Caps)": f"{base_url}NIFTY_MICROCAP_250.csv"
@@ -27,28 +27,29 @@ def load_index_tickers(index_name):
         with urllib.request.urlopen(req) as response:
             df = pd.read_csv(io.StringIO(response.read().decode('utf-8')))
             
-        # Dynamically search for the text column containing symbol data
         symbol_col = [col for col in df.columns if 'Symbol' in col or 'symbol' in col or 'SYMBOL' in col]
         if symbol_col:
-            tickers = [str(sym).strip() + ".NS" for sym in df[symbol_col[0]].dropna().unique()]
+            tickers = [str(sym).strip() + ".NS" for sym in df[symbol_col].dropna().unique()]
             return tickers
     except Exception:
         pass
         
-    # Reliable backup fallbacks if GitHub raw lists hit temporary latency
+    # Faultless resilient mock maps if connection times out
     fallbacks = {
         "Nifty 50 (Mega Caps)": ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS"],
-        "Nifty Midcap 150": ["TATAMOTORS.NS", "FEDERALBNK.NS", "VOLTAS.NS", "PAGEIND.NS"],
-        "Nifty Smallcap 250": ["SUZLON.NS", "RBLBANK.NS", "CEAT.NS", "CDSL.NS"],
-        "Nifty Microcap 250 (Micro Caps)": ["INFIBEAM.NS", "DEN.NS", "SURYODAY.NS"]
+        "Nifty 500 (Comprehensive Market)": ["RELIANCE.NS", "TCS.NS", "MIDHANI.NS", "ZOMATO.NS", "SUZLON.NS"],
+        "Nifty Midcap 150": ["TATAMOTORS.NS", "FEDERALBNK.NS", "VOLTAS.NS"],
+        "Nifty Smallcap 250": ["SUZLON.NS", "RBLBANK.NS", "CDSL.NS"],
+        "Nifty Microcap 250 (Micro Caps)": ["INFIBEAM.NS", "DEN.NS"]
     }
     return fallbacks.get(index_name, ["RELIANCE.NS"])
 
-# Refined layout UI selector
+# Streamlined Dropdown Menu
 selected_index = st.selectbox(
-    "🎯 Choose the specific stock market layer to sweep:",
+    "🎯 Select the exact market segment you want to analyze:",
     [
-        "Nifty 50 (Mega Caps)", 
+        "Nifty 50 (Mega Caps)",
+        "Nifty 500 (Comprehensive Market)",
         "Nifty Midcap 150", 
         "Nifty Smallcap 250", 
         "Nifty Microcap 250 (Micro Caps)"
@@ -56,9 +57,9 @@ selected_index = st.selectbox(
 )
 
 tickers_to_scan = load_index_tickers(selected_index)
-st.info(f"📋 Loaded {len(tickers_to_scan)} companies inside the {selected_index} segment.")
+st.info(f"📋 Loaded {len(tickers_to_scan)} companies matching your selection.")
 
-# Added a batch slider limit so users don't get banned by Yahoo Finance if running massive micro-cap sets
+# Slider to prevent server overloads during quick evaluation sweeps
 max_scan = st.slider("⚙️ Limit scan batch size (Recommended for quick testing):", 5, len(tickers_to_scan), min(50, len(tickers_to_scan)))
 
 if st.button("🚀 Run Live Engine Sweep", type="primary"):
@@ -85,10 +86,9 @@ if st.button("🚀 Run Live Engine Sweep", type="primary"):
             if "Net Income" not in financials.index:
                 continue
                 
-            recent_net_income = financials.loc["Net Income"].iloc[0]
+            recent_net_income = financials.loc["Net Income"].iloc
             recent_profit_crores = recent_net_income / 10_000_000
             
-            # Use dynamic growth parameters or use 10% base projection for smaller caps
             growth_rate = info.get("earningsGrowth", 0.10)
             if growth_rate is None or growth_rate <= 0:
                 growth_rate = 0.10
@@ -120,11 +120,11 @@ if st.button("🚀 Run Live Engine Sweep", type="primary"):
         passed_df = df[df["Thesis Match"] == "✅ PASS"]
         
         if not passed_df.empty:
-            st.success(f"🎉 Found {len(passed_df)} stocks matching your exact framework criteria!")
+            st.success(f"🎉 Found {len(passed_df)} stocks matching your exact thesis framework!")
             st.dataframe(passed_df, use_container_width=True)
             
             csv = passed_df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Export Matches to CSV", data=csv, file_name="cap_thesis_matches.csv", mime="text/csv")
+            st.download_button("📥 Export Matches to CSV", data=csv, file_name="nifty_thesis_matches.csv", mime="text/csv")
         else:
             st.warning("No companies in this checked batch satisfied the conditions today.")
             
